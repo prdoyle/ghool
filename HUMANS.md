@@ -5,13 +5,16 @@ account or one org. If you need access to repos under both (e.g. `myname` and
 `acme-corp`), you need one PAT each. ghool stores them by owner name and supplies
 the right one to `gh` on demand.
 
+**Not sure where you're at?** Run `./install.sh --status` to see what's done
+and what remains.
+
 ## Install
 
 ```bash
 /path/to/ghool/install.sh
 ```
 
-The script can be run from any directory.
+The script is safe to re-run — it skips steps that are already complete.
 
 ## Save a token
 

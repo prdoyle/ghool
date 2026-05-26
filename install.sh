@@ -1,18 +1,57 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-cd "$(dirname "$0")"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR"
 
-if [ ! -d .venv ]; then
-    python3 -m venv .venv
+VENV="$SCRIPT_DIR/.venv"
+BIN_DIR="$HOME/.local/bin"
+LINK="$BIN_DIR/ghool"
+
+check_venv()      { [ -d "$VENV" ]; }
+check_installed() { [ -x "$VENV/bin/ghool" ]; }
+check_linked()    { [ -L "$LINK" ] && [ "$(readlink "$LINK")" = "$VENV/bin/ghool" ]; }
+check_path()      { command -v ghool &>/dev/null; }
+
+if [ "${1:-}" = "--status" ]; then
+    check_venv      && echo "[✓] Virtual environment (.venv)" \
+                    || echo "[✗] Virtual environment (.venv)"
+    check_installed && echo "[✓] Package installed" \
+                    || echo "[✗] Package installed"
+    check_linked    && echo "[✓] Binary linked (~/.local/bin/ghool)" \
+                    || echo "[✗] Binary linked (~/.local/bin/ghool)"
+    check_path      && echo "[✓] On PATH (ghool command available)" \
+                    || echo "[✗] On PATH (ghool command available)"
+    exit 0
 fi
 
-.venv/bin/pip install -e ".[dev]"
+if check_venv; then
+    echo "[✓] Virtual environment already exists"
+else
+    echo "[ ] Creating virtual environment..."
+    python3 -m venv "$VENV"
+    echo "[✓] Virtual environment created"
+fi
 
-mkdir -p ~/.local/bin
-ln -sf "$(pwd)/.venv/bin/ghool" ~/.local/bin/ghool
+if check_installed; then
+    echo "[✓] Package already installed"
+else
+    echo "[ ] Installing package..."
+    "$VENV/bin/pip" install -e ".[dev]"
+    echo "[✓] Package installed"
+fi
 
-if ! command -v ghool &>/dev/null; then
+mkdir -p "$BIN_DIR"
+if check_linked; then
+    echo "[✓] Binary already linked"
+else
+    ln -sf "$VENV/bin/ghool" "$LINK"
+    echo "[✓] Binary linked to ~/.local/bin/ghool"
+fi
+
+if check_path; then
+    echo "[✓] ghool is on your PATH"
+else
     echo ""
     echo "Installed to ~/.local/bin/ghool"
     echo "Add this to ~/.zshrc to put it on your PATH:"
