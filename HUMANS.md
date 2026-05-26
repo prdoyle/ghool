@@ -14,7 +14,8 @@ and what remains.
 /path/to/ghool/install.sh
 ```
 
-The script is safe to re-run — it skips steps that are already complete.
+The script is safe to re-run — it skips steps that are already complete. It
+also installs the Claude skill so LLM agents know how to use ghool.
 
 ## Save a token
 
@@ -48,13 +49,6 @@ Examples:
 ```bash
 GH_TOKEN=$(ghool secret-token alice) gh repo list alice --limit 50
 GH_TOKEN=$(ghool secret-token acme-corp) gh pr list --repo acme-corp/website
-```
-
-## Install the Claude skill
-
-```bash
-mkdir -p ~/.claude/skills/ghool
-ghool skill > ~/.claude/skills/ghool/SKILL.md
 ```
 
 ## Run tests

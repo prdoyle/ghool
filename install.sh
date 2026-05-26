@@ -7,10 +7,14 @@ cd "$SCRIPT_DIR"
 VENV="$SCRIPT_DIR/.venv"
 BIN_DIR="$HOME/.local/bin"
 LINK="$BIN_DIR/ghool"
+SKILL_DIR="$HOME/.claude/skills/ghool"
+SKILL_FILE="$SKILL_DIR/SKILL.md"
 
 check_venv()      { [ -d "$VENV" ]; }
 check_installed() { [ -x "$VENV/bin/ghool" ]; }
 check_linked()    { [ -L "$LINK" ] && [ "$(readlink "$LINK")" = "$VENV/bin/ghool" ]; }
+check_skill()     { check_installed && [ -f "$SKILL_FILE" ] && \
+                    "$VENV/bin/ghool" skill | diff - "$SKILL_FILE" &>/dev/null; }
 check_path()      { command -v ghool &>/dev/null; }
 
 if [ "${1:-}" = "--status" ]; then
@@ -20,6 +24,8 @@ if [ "${1:-}" = "--status" ]; then
                     || echo "[✗] Package installed"
     check_linked    && echo "[✓] Binary linked (~/.local/bin/ghool)" \
                     || echo "[✗] Binary linked (~/.local/bin/ghool)"
+    check_skill     && echo "[✓] Claude skill installed (~/.claude/skills/ghool/SKILL.md)" \
+                    || echo "[✗] Claude skill installed (~/.claude/skills/ghool/SKILL.md)"
     check_path      && echo "[✓] On PATH (ghool command available)" \
                     || echo "[✗] On PATH (ghool command available)"
     exit 0
@@ -47,6 +53,14 @@ if check_linked; then
 else
     ln -sf "$VENV/bin/ghool" "$LINK"
     echo "[✓] Binary linked to ~/.local/bin/ghool"
+fi
+
+mkdir -p "$SKILL_DIR"
+if check_skill; then
+    echo "[✓] Claude skill already up to date"
+else
+    "$VENV/bin/ghool" skill > "$SKILL_FILE"
+    echo "[✓] Claude skill installed"
 fi
 
 if check_path; then
