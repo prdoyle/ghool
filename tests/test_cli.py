@@ -166,7 +166,7 @@ class TestSkill:
 
     def test_contains_usage_pattern(self, isolated):
         result = CliRunner().invoke(cli, ["skill"])
-        assert "GH_TOKEN=$(ghool secret-token" in result.output
+        assert "TOKEN=$(ghool secret-token" in result.output
 
     def test_contains_all_command_names(self, isolated):
         result = CliRunner().invoke(cli, ["skill"])

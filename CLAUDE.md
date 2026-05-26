@@ -7,7 +7,7 @@ itself is the security boundary.
 
 Primary usage pattern:
 
-    GH_TOKEN=$(ghool secret-token OWNER) gh COMMAND
+    TOKEN=$(ghool secret-token OWNER) && GH_TOKEN=$TOKEN gh COMMAND
 
 ## Architecture
 
@@ -33,7 +33,7 @@ responsibility.
 ## Testing
 
     pip install -e ".[dev]"
-    pytest
+    .venv/bin/pytest
 
 - `tests/test_core.py` — unit tests for every function in `core.py`
 - `tests/test_cli.py` — integration tests using Click `CliRunner`, `tmp_path`,

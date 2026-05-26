@@ -16,7 +16,7 @@ def cli():
 
     Primary usage pattern:
 
-        GH_TOKEN=$(ghool secret-token OWNER) gh COMMAND
+        TOKEN=$(ghool secret-token OWNER) && GH_TOKEN=$TOKEN gh COMMAND
 
     Run any subcommand with --help for details on inputs, outputs, and errors.
     """
@@ -29,7 +29,7 @@ def cmd_secret_token(owner):
 
     OWNER is the GitHub username or org name the token was saved under.
 
-    Intended use: GH_TOKEN=$(ghool secret-token OWNER) gh COMMAND
+    Intended use: TOKEN=$(ghool secret-token OWNER) && GH_TOKEN=$TOKEN gh COMMAND
     Do not run bare — the raw secret token is printed directly to stdout.
 
     On success (exit 0): raw token followed by a newline.

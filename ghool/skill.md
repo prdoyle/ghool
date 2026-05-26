@@ -12,12 +12,12 @@ one org); ghool dispatches the right token for each call.
 
 ## Token routing pattern
 
-    GH_TOKEN=$(ghool secret-token OWNER) gh COMMAND
+    TOKEN=$(ghool secret-token OWNER) && GH_TOKEN=$TOKEN gh COMMAND
 
 Examples:
 
-    GH_TOKEN=$(ghool secret-token alice) gh api repos/alice/private-fork/events?per_page=100
-    GH_TOKEN=$(ghool secret-token acme-corp) gh api repos/acme-corp/internal-tool/contents/README.md
+    TOKEN=$(ghool secret-token alice) && GH_TOKEN=$TOKEN gh api repos/alice/private-fork/events?per_page=100
+    TOKEN=$(ghool secret-token acme-corp) && GH_TOKEN=$TOKEN gh api repos/acme-corp/internal-tool/contents/README.md
 
 ## Commands
 

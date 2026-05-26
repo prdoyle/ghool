@@ -41,14 +41,14 @@ Repeat for each owner. Tokens are saved to `~/.config/ghool/secrets.toml`
 ## Use a token
 
 ```bash
-GH_TOKEN=$(ghool secret-token OWNER) gh COMMAND
+TOKEN=$(ghool secret-token OWNER) && GH_TOKEN=$TOKEN gh COMMAND
 ```
 
 Examples:
 
 ```bash
-GH_TOKEN=$(ghool secret-token alice) gh repo list alice --limit 50
-GH_TOKEN=$(ghool secret-token acme-corp) gh pr list --repo acme-corp/website
+TOKEN=$(ghool secret-token alice) && GH_TOKEN=$TOKEN gh repo list alice --limit 50
+TOKEN=$(ghool secret-token acme-corp) && GH_TOKEN=$TOKEN gh pr list --repo acme-corp/website
 ```
 
 ## Run tests
