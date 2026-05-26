@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.venv/
+.pytest_cache/
+# Defensive: secrets file lives in ~/.config/ghool/, not here, but just in case
+secrets.toml
+# Local Claude Code settings (personal allowlists etc.)
+.claude/settings.local.json
