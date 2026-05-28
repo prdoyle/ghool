@@ -20,6 +20,14 @@ Examples:
     ghool with-key alice gh api repos/alice/private-fork/events?per_page=100
     ghool with-key acme-corp gh api repos/acme-corp/internal-tool/contents/README.md
 
+## Processing JSON output
+
+Use `jq` to filter and extract fields from `gh` output — not Python. Piping
+into Python requires an extra permission prompt every time; `jq` does not.
+
+    ghool with-key alice gh pr list --repo alice/my-repo --json number,title | jq '.[] | .title'
+    ghool with-key alice gh api repos/alice/my-repo/events?per_page=100 | jq '.[0].type'
+
 ## Commands
 
 - `ghool with-key OWNER gh ARGS` — run a `gh` command with the stored PAT for
