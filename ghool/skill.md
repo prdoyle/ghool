@@ -43,17 +43,8 @@ Examples:
 
 If `ghool secret-token OWNER` exits 1 with `{"error": "missing_token", ...}`:
 
-1. Run `ghool auth setup OWNER` — opens the browser and prints the next step.
-2. In the browser: set Resource owner to OWNER, grant Contents: Read-only and
-   Metadata: Read-only, scope to only the repos you need.
-3. Ask the user to copy the generated token to their clipboard, then run
-   `ghool auth save OWNER`. In non-interactive contexts, use
-   `MY_PAT=<token> ghool auth save OWNER --env-var=MY_PAT`.
-
-## PAT permission requirements
-
-- Contents: Read-only
-- Metadata: Read-only (required by GitHub for all fine-grained PATs)
-
-Create separate PATs for different resource owners (e.g. one for `alice`,
-one for `acme-corp`). Store them with `ghool auth save`.
+1. Run `ghool auth setup OWNER` — opens the browser and prints JSON.
+2. Show the `instructions`, `note`, and `next_step` fields from that JSON verbatim
+   to the user. Do not paraphrase them. Then wait for the user to act.
+3. Once the user indicates they have saved a token, run `ghool auth save OWNER`
+   (or `MY_PAT=<token> ghool auth save OWNER --env-var=MY_PAT` if non-interactive).

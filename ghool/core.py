@@ -95,7 +95,9 @@ def classify_smoke_test(owner: str, status_code: int, repos: list) -> SmokeResul
     if status_code == 403:
         return Invalid(
             status_code,
-            "Token rejected (403 Forbidden). Ensure the token has Contents and Metadata read permissions.",
+            "Token rejected (403 Forbidden). Grant these Read-only permissions: "
+            "Actions, Commit statuses, Contents, Issues, Metadata, Pull requests. "
+            "Do NOT add Administration — it allows deleting repos.",
         )
     if status_code == 404:
         return Invalid(status_code, f"Owner '{owner}' not found (404). Check the owner name.")
@@ -155,12 +157,16 @@ def build_auth_setup_payload(owner: str) -> dict:
         "browser_url": url,
         "instructions": (
             f"Set 'Resource owner' to '{owner}'. "
-            "Grant 'Contents: Read-only' and 'Metadata: Read-only'. "
-            "Scope to only the repositories you need."
+            "Grant these Read-only permissions: Actions, Commit statuses, Contents, "
+            "Issues, Metadata (required), Pull requests. "
+            "Do NOT add Administration — it allows deleting repos. "
+            "Scope to 'All repositories' or only the repos you need."
         ),
         "note": (
             f"If '{owner}' is an organisation, it must have fine-grained PATs "
-            "enabled (org Settings → Personal access tokens → Allow)."
+            "enabled (org Settings → Personal access tokens → Allow). "
+            "Use one PAT per resource owner — e.g. one for your personal account "
+            "(covers forks) and a separate one for each org."
         ),
         "next_step": f"Copy the token to your clipboard, then run: ghool auth save {owner}",
     }
