@@ -49,3 +49,10 @@ Resist adding runtime deps.
 - Secrets file written with `chmod 600` on every save.
 - Never log token values anywhere.
 - Never include token values in any error payload printed to stdout.
+
+## Examples and documentation
+
+Use only fictional, generic names in all examples — owner names, repo names,
+org names, etc. Never use real GitHub usernames, real org names, or real repo
+names (even well-known public ones). Prefer placeholder names like `alice`,
+`acme-corp`, `my-repo`.
