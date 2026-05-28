@@ -155,6 +155,55 @@ def cmd_auth_save(owner, env_var):
     click.echo(json.dumps(result.to_json()))
 
 
+@cli.command("with-key", context_settings=dict(allow_extra_args=True, ignore_unknown_options=True))
+@click.argument("owner")
+@click.argument("args", nargs=-1, type=click.UNPROCESSED)
+def cmd_with_key(owner, args):
+    """Run a gh command using the stored PAT for OWNER.
+
+    OWNER is the GitHub username or org name the token was saved under.
+    The remaining arguments must begin with 'gh'.
+
+    This is the recommended way for agents to invoke gh — the token is
+    injected automatically and never appears on the command line.
+
+    Only 'gh' is accepted as the command; other programs are rejected.
+
+    Examples:
+        ghool with-key alice gh pr list --repo alice/my-repo
+        ghool with-key acme-corp gh api repos/acme-corp/internal-tool/issues
+
+    On missing token (exit 1): JSON to stdout.
+      {error, owner, message, suggested_command}
+    On disallowed command (exit 1): JSON to stdout.
+      {error, message}
+    On success: gh output flows through directly; exit code matches gh's.
+    """
+    if not args or args[0] != "gh":
+        click.echo(json.dumps({
+            "error": "not_gh_command",
+            "message": (
+                "ghool with-key only runs gh. "
+                "Usage: ghool with-key OWNER gh ARGS"
+            ),
+        }))
+        sys.exit(1)
+
+    secrets = paths.read_secrets()
+    result = core.lookup_token(owner, secrets)
+    if isinstance(result, core.MissingToken):
+        click.echo(json.dumps(result.to_json()))
+        sys.exit(1)
+
+    # Strip GH_* and GITHUB_* to prevent stray env vars (e.g. GH_REPO, GH_HOST)
+    # from silently misdirecting commands to the wrong repo or host.
+    env = {k: v for k, v in os.environ.items()
+           if not k.startswith(("GH_", "GITHUB_"))}
+    env["GH_TOKEN"] = result
+    proc = subprocess.run(list(args), env=env)
+    sys.exit(proc.returncode)
+
+
 @cli.command("skill")
 def cmd_skill():
     """Print the ghool Claude skill file to stdout.

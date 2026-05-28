@@ -41,15 +41,32 @@ Repeat for each owner. Tokens are saved to `~/.config/ghool/secrets.toml`
 ## Use a token
 
 ```bash
-TOKEN=$(ghool secret-token OWNER) && GH_TOKEN=$TOKEN gh COMMAND
+ghool with-key OWNER gh COMMAND
 ```
 
 Examples:
 
 ```bash
-TOKEN=$(ghool secret-token alice) && GH_TOKEN=$TOKEN gh repo list alice --limit 50
-TOKEN=$(ghool secret-token acme-corp) && GH_TOKEN=$TOKEN gh pr list --repo acme-corp/website
+ghool with-key alice gh repo list alice --limit 50
+ghool with-key acme-corp gh pr list --repo acme-corp/website
 ```
+
+The `with-key` form is preferred: it injects the right token automatically and
+never exposes it on the command line. The raw-token form still works if you need
+it for scripting:
+
+```bash
+TOKEN=$(ghool secret-token OWNER) && GH_TOKEN=$TOKEN gh COMMAND
+```
+
+## Claude Code setup
+
+`install.sh` automatically adds `Bash(ghool with-key *)` to your
+`~/.claude/settings.json`, so LLM agents can run `ghool with-key` without a
+permission prompt on every call. Run `./install.sh --status` to confirm.
+
+The fine-grained PAT is the security boundary: it can only reach the repos and
+actions it was granted, regardless of what `gh` command is run.
 
 ## Run tests
 

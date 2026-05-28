@@ -5,22 +5,26 @@ description: "Use instead of bare gh commands when querying GitHub repos — sup
 
 # Using ghool
 
-ghool stores fine-grained GitHub PATs by owner name and prints them on demand,
-so you can run `gh` commands against private repos without granting overly broad
-OAuth scopes. Each PAT is scoped to a single resource owner (personal account or
-one org); ghool dispatches the right token for each call.
+ghool stores fine-grained GitHub PATs by owner name and runs `gh` commands with
+the right token automatically, so private repos and forks are never silently
+omitted. Each PAT is scoped to a single resource owner (personal account or one
+org); ghool dispatches the right token for each call.
 
-## Token routing pattern
+## Recommended usage pattern
 
-    TOKEN=$(ghool secret-token OWNER) && GH_TOKEN=$TOKEN gh COMMAND
+    ghool with-key OWNER gh COMMAND
 
 Examples:
 
-    TOKEN=$(ghool secret-token alice) && GH_TOKEN=$TOKEN gh api repos/alice/private-fork/events?per_page=100
-    TOKEN=$(ghool secret-token acme-corp) && GH_TOKEN=$TOKEN gh api repos/acme-corp/internal-tool/contents/README.md
+    ghool with-key alice gh pr list --repo alice/my-repo
+    ghool with-key alice gh api repos/alice/private-fork/events?per_page=100
+    ghool with-key acme-corp gh api repos/acme-corp/internal-tool/contents/README.md
 
 ## Commands
 
+- `ghool with-key OWNER gh ARGS` — run a `gh` command with the stored PAT for
+  OWNER injected as `GH_TOKEN`. Only `gh` is accepted; other programs are
+  rejected. Exit code matches `gh`'s. Preferred for all agent use.
 - `ghool secret-token OWNER` — prints the stored PAT for OWNER. Use only via
   `$(...)` capture; never run bare as it prints a secret to stdout.
 - `ghool auth setup OWNER` — opens the browser to create a fine-grained PAT for

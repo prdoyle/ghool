@@ -155,6 +155,75 @@ class TestAuthSaveEnvVar:
         assert "github_pat_alice" in content
 
 
+class TestWithKey:
+    def test_runs_gh_with_token(self, isolated, monkeypatch):
+        _write_token(isolated, "alice", "github_pat_abc")
+        calls = []
+        monkeypatch.setattr(subprocess, "run",
+            lambda args, env=None: calls.append((args, env)) or SimpleNamespace(returncode=0))
+        result = CliRunner().invoke(cli, ["with-key", "alice", "gh", "pr", "list"])
+        assert result.exit_code == 0
+        assert calls[0][0] == ["gh", "pr", "list"]
+        assert calls[0][1]["GH_TOKEN"] == "github_pat_abc"
+
+    def test_passthrough_exit_code(self, isolated, monkeypatch):
+        _write_token(isolated, "alice", "github_pat_abc")
+        monkeypatch.setattr(subprocess, "run",
+            lambda *a, **kw: SimpleNamespace(returncode=2))
+        result = CliRunner().invoke(cli, ["with-key", "alice", "gh", "pr", "list"])
+        assert result.exit_code == 2
+
+    def test_missing_token(self, isolated):
+        result = CliRunner().invoke(cli, ["with-key", "alice", "gh", "pr", "list"])
+        assert result.exit_code == 1
+        payload = json.loads(result.output)
+        assert payload["error"] == "missing_token"
+        assert payload["owner"] == "alice"
+
+    def test_rejects_non_gh_command(self, isolated):
+        _write_token(isolated, "alice", "github_pat_abc")
+        result = CliRunner().invoke(cli, ["with-key", "alice", "curl", "https://example.com"])
+        assert result.exit_code == 1
+        assert json.loads(result.output)["error"] == "not_gh_command"
+
+    def test_rejects_empty_args(self, isolated):
+        _write_token(isolated, "alice", "github_pat_abc")
+        result = CliRunner().invoke(cli, ["with-key", "alice"])
+        assert result.exit_code == 1
+        assert json.loads(result.output)["error"] == "not_gh_command"
+
+    def test_token_not_in_output(self, isolated, monkeypatch):
+        _write_token(isolated, "alice", "github_pat_supersecret")
+        monkeypatch.setattr(subprocess, "run",
+            lambda *a, **kw: SimpleNamespace(returncode=0))
+        result = CliRunner().invoke(cli, ["with-key", "alice", "gh", "pr", "list"])
+        assert "github_pat_supersecret" not in result.output
+
+    def test_strips_gh_and_github_env_vars(self, isolated, monkeypatch):
+        _write_token(isolated, "alice", "github_pat_abc")
+        monkeypatch.setenv("GH_REPO", "alice/wrong-repo")
+        monkeypatch.setenv("GH_HOST", "github.example.com")
+        monkeypatch.setenv("GITHUB_TOKEN", "github_pat_other")
+        calls = []
+        monkeypatch.setattr(subprocess, "run",
+            lambda args, env=None: calls.append((args, env)) or SimpleNamespace(returncode=0))
+        CliRunner().invoke(cli, ["with-key", "alice", "gh", "pr", "list"])
+        env = calls[0][1]
+        assert "GH_REPO" not in env
+        assert "GH_HOST" not in env
+        assert "GITHUB_TOKEN" not in env
+
+    def test_preserves_non_gh_env_vars(self, isolated, monkeypatch):
+        _write_token(isolated, "alice", "github_pat_abc")
+        monkeypatch.setenv("MY_VAR", "my_value")
+        calls = []
+        monkeypatch.setattr(subprocess, "run",
+            lambda args, env=None: calls.append((args, env)) or SimpleNamespace(returncode=0))
+        CliRunner().invoke(cli, ["with-key", "alice", "gh", "pr", "list"])
+        assert calls[0][1].get("MY_VAR") == "my_value"
+
+
+
 class TestSkill:
     def test_has_yaml_frontmatter(self, isolated):
         result = CliRunner().invoke(cli, ["skill"])
@@ -166,9 +235,9 @@ class TestSkill:
 
     def test_contains_usage_pattern(self, isolated):
         result = CliRunner().invoke(cli, ["skill"])
-        assert "TOKEN=$(ghool secret-token" in result.output
+        assert "ghool with-key OWNER gh" in result.output
 
     def test_contains_all_command_names(self, isolated):
         result = CliRunner().invoke(cli, ["skill"])
-        for cmd in ["secret-token", "auth setup", "auth save", "skill"]:
+        for cmd in ["with-key", "secret-token", "auth setup", "auth save", "skill"]:
             assert cmd in result.output
