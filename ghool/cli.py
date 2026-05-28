@@ -16,32 +16,10 @@ def cli():
 
     Primary usage pattern:
 
-        TOKEN=$(ghool secret-token OWNER) && GH_TOKEN=$TOKEN gh COMMAND
+        ghool with-key OWNER gh COMMAND
 
     Run any subcommand with --help for details on inputs, outputs, and errors.
     """
-
-
-@cli.command("secret-token")
-@click.argument("owner")
-def cmd_secret_token(owner):
-    """Print the stored PAT for OWNER to stdout.
-
-    OWNER is the GitHub username or org name the token was saved under.
-
-    Intended use: TOKEN=$(ghool secret-token OWNER) && GH_TOKEN=$TOKEN gh COMMAND
-    Do not run bare — the raw secret token is printed directly to stdout.
-
-    On success (exit 0): raw token followed by a newline.
-    On missing token (exit 1): JSON to stdout.
-      {error, owner, message, suggested_command}
-    """
-    secrets = paths.read_secrets()
-    result = core.lookup_token(owner, secrets)
-    if isinstance(result, core.MissingToken):
-        click.echo(json.dumps(result.to_json()))
-        sys.exit(1)
-    click.echo(result)
 
 
 @cli.group("auth")

@@ -29,28 +29,6 @@ def _write_token(isolated, owner, token):
     secrets_file.chmod(0o600)
 
 
-class TestSecretToken:
-    def test_missing_token(self, isolated):
-        result = CliRunner().invoke(cli, ["secret-token", "alice"])
-        assert result.exit_code == 1
-        payload = json.loads(result.output)
-        assert payload["error"] == "missing_token"
-        assert payload["owner"] == "alice"
-        assert "suggested_command" in payload
-
-    def test_present_token(self, isolated):
-        _write_token(isolated, "alice", "tok_abc123")
-        result = CliRunner().invoke(cli, ["secret-token", "alice"])
-        assert result.exit_code == 0
-        assert result.output.strip() == "tok_abc123"
-
-    def test_missing_other_owner(self, isolated):
-        _write_token(isolated, "bob", "tok_bob")
-        result = CliRunner().invoke(cli, ["secret-token", "alice"])
-        assert result.exit_code == 1
-        assert json.loads(result.output)["error"] == "missing_token"
-
-
 class TestAuthSetup:
     def test_prints_json_and_opens_browser(self, isolated, monkeypatch):
         opened = []
@@ -239,5 +217,5 @@ class TestSkill:
 
     def test_contains_all_command_names(self, isolated):
         result = CliRunner().invoke(cli, ["skill"])
-        for cmd in ["with-key", "secret-token", "auth setup", "auth save", "skill"]:
+        for cmd in ["with-key", "auth setup", "auth save", "skill"]:
             assert cmd in result.output

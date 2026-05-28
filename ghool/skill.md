@@ -33,8 +33,6 @@ into Python requires an extra permission prompt every time; `jq` does not.
 - `ghool with-key OWNER gh ARGS` — run a `gh` command with the stored PAT for
   OWNER injected as `GH_TOKEN`. Only `gh` is accepted; other programs are
   rejected. Exit code matches `gh`'s. Preferred for all agent use.
-- `ghool secret-token OWNER` — prints the stored PAT for OWNER. Use only via
-  `$(...)` capture; never run bare as it prints a secret to stdout.
 - `ghool auth setup OWNER` — opens the browser to create a fine-grained PAT for
   OWNER; prints JSON with required permissions and the next command to run.
 - `ghool auth save OWNER` — reads the PAT from the clipboard (macOS only),
@@ -53,7 +51,7 @@ into Python requires an extra permission prompt every time; `jq` does not.
 
 ## Recovery from missing-token errors
 
-If `ghool secret-token OWNER` exits 1 with `{"error": "missing_token", ...}`:
+If `ghool with-key OWNER gh ...` exits 1 with `{"error": "missing_token", ...}`:
 
 1. Run `ghool auth setup OWNER` — opens the browser and prints JSON.
 2. Show the `instructions`, `note`, and `next_step` fields from that JSON verbatim

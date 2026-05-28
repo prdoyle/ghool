@@ -7,7 +7,7 @@ itself is the security boundary.
 
 Primary usage pattern:
 
-    TOKEN=$(ghool secret-token OWNER) && GH_TOKEN=$TOKEN gh COMMAND
+    ghool with-key OWNER gh COMMAND
 
 ## Architecture
 

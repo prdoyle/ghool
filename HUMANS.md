@@ -35,6 +35,8 @@ generate and copy the token.
 ghool auth save OWNER
 ```
 
+This command reads the token out of the clipboard.
+
 Repeat for each owner. Tokens are saved to `~/.config/ghool/secrets.toml`
 (mode 600).
 
@@ -49,14 +51,6 @@ Examples:
 ```bash
 ghool with-key alice gh repo list alice --limit 50
 ghool with-key acme-corp gh pr list --repo acme-corp/website
-```
-
-The `with-key` form is preferred: it injects the right token automatically and
-never exposes it on the command line. The raw-token form still works if you need
-it for scripting:
-
-```bash
-TOKEN=$(ghool secret-token OWNER) && GH_TOKEN=$TOKEN gh COMMAND
 ```
 
 ## Claude Code setup
