@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import tomllib
 from dataclasses import dataclass
 from typing import Union
@@ -28,6 +29,39 @@ def lookup_token(owner: str, secrets: dict[str, str]) -> Union[str, MissingToken
     if not token:
         return MissingToken(owner)
     return token
+
+
+# ---------------------------------------------------------------------------
+# Owner-name validation
+# ---------------------------------------------------------------------------
+
+@dataclass
+class InvalidOwner:
+    owner: str
+
+    def to_json(self) -> dict:
+        return {
+            "error": "invalid_owner",
+            "owner": self.owner,
+            "message": (
+                f"Owner name '{self.owner}' is not a valid GitHub owner name. "
+                "Use only letters, digits, and hyphens (max 39 characters, "
+                "starting and ending with a letter or digit)."
+            ),
+        }
+
+
+# GitHub usernames/orgs: alphanumeric and hyphens, must start and end
+# alphanumeric, up to 39 chars. Gating here keeps owner names safe to use as
+# secrets.toml keys (no quotes, backslashes, or newlines reach the serialiser).
+_OWNER_RE = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$")
+
+
+def validate_owner(owner: str) -> InvalidOwner | None:
+    """Return InvalidOwner if owner is not a safe GitHub owner name, else None."""
+    if _OWNER_RE.match(owner):
+        return None
+    return InvalidOwner(owner)
 
 
 # ---------------------------------------------------------------------------
@@ -120,7 +154,12 @@ def parse_secrets_toml(text: str) -> dict[str, str]:
 
 
 def format_secrets_toml(tokens: dict[str, str]) -> str:
-    """Serialise a tokens dict to secrets.toml content (sorted by owner name)."""
+    """Serialise a tokens dict to secrets.toml content (sorted by owner name).
+
+    Values are interpolated without escaping: this is safe because owner names
+    are gated by validate_owner and token values by is_github_pat, so neither
+    can contain quotes, backslashes, or newlines.
+    """
     lines = [
         "# KEEP THIS FILE PRIVATE — contains GitHub API tokens\n",
         "# Do not commit or share this file.\n",
@@ -137,11 +176,31 @@ def format_secrets_toml(tokens: dict[str, str]) -> str:
 # ---------------------------------------------------------------------------
 
 _GITHUB_PAT_PREFIXES = ("github_pat_", "ghp_")
+_GITHUB_PAT_RE = re.compile(r"^(?:github_pat_|ghp_)[A-Za-z0-9_]+$")
 
 
 def is_github_pat(token: str) -> bool:
-    """Return True if token looks like a GitHub PAT."""
-    return any(token.startswith(p) for p in _GITHUB_PAT_PREFIXES)
+    """Return True if token looks like a GitHub PAT.
+
+    Requires a known prefix plus a body of only [A-Za-z0-9_], so any value that
+    passes this check is also safe to write as a secrets.toml value.
+    """
+    return bool(_GITHUB_PAT_RE.match(token))
+
+
+def safe_preview(value: str) -> str:
+    """Return an identifying-but-unusable preview of a secret-ish value.
+
+    For a recognised PAT, show the fixed (non-secret) prefix plus the first 4
+    characters of the random body — tokens carry dozens of random characters, so
+    this always hides far more than enough to make the key unusable while staying
+    recognisable. For anything else (e.g. a rejected clipboard value with no
+    known prefix), show only the first 4 characters.
+    """
+    for prefix in _GITHUB_PAT_PREFIXES:
+        if value.startswith(prefix):
+            return value[:len(prefix) + 4] + "…"
+    return value[:4] + "…"
 
 
 # ---------------------------------------------------------------------------

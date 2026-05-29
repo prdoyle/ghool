@@ -10,3 +10,5 @@ build/
 secrets.toml
 # Local Claude Code settings (personal allowlists etc.)
 .claude/settings.local.json
+
+.coverage

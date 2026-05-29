@@ -44,15 +44,33 @@ class TestAuthSetup:
 
 class TestAuthSave:
     def test_reads_from_clipboard(self, isolated, monkeypatch):
+        token = "github_pat_" + "secretbody1234567890"
         monkeypatch.setattr(subprocess, "run",
-            lambda *a, **kw: SimpleNamespace(stdout="github_pat_abc123\n"))
+            lambda *a, **kw: SimpleNamespace(stdout=token + "\n"))
         with rsps.RequestsMock() as m:
             m.add(rsps.GET, "https://api.github.com/users/alice/repos",
                   json=[{"private": True}], status=200)
             result = CliRunner().invoke(cli, ["auth", "save", "alice"])
         assert result.exit_code == 0
         assert json.loads(result.stdout)["success"] is True
+        # The fixed prefix is fine to show; the full token must never appear.
         assert "github_pat_" in result.stderr
+        assert token not in result.stderr
+
+    def test_pbpaste_nonzero_exit(self, isolated, monkeypatch):
+        def raise_cpe(*a, **kw):
+            raise subprocess.CalledProcessError(1, "pbpaste")
+        monkeypatch.setattr(subprocess, "run", raise_cpe)
+        result = CliRunner().invoke(cli, ["auth", "save", "alice"])
+        assert result.exit_code == 1
+        assert json.loads(result.output)["error"] == "clipboard_read_failed"
+
+    def test_empty_clipboard(self, isolated, monkeypatch):
+        monkeypatch.setattr(subprocess, "run",
+            lambda *a, **kw: SimpleNamespace(stdout="\n"))
+        result = CliRunner().invoke(cli, ["auth", "save", "alice"])
+        assert result.exit_code == 1
+        assert json.loads(result.output)["error"] == "clipboard_not_a_token"
 
     def test_clipboard_not_a_pat(self, isolated, monkeypatch):
         monkeypatch.setattr(subprocess, "run",
@@ -62,6 +80,9 @@ class TestAuthSave:
         payload = json.loads(result.output)
         assert payload["error"] == "clipboard_not_a_token"
         assert "suggested_action" in payload
+        # Only a 4-char preview is emitted, never the whole clipboard value.
+        assert payload["clipboard_preview"] == "some…"
+        assert "random text" not in result.output
 
     def test_pbpaste_not_found(self, isolated, monkeypatch):
         def raise_fnf(*a, **kw):
@@ -123,7 +144,10 @@ class TestAuthSaveEnvVar:
         monkeypatch.setenv("TEST_PAT", "not-a-token")
         result = CliRunner().invoke(cli, ["auth", "save", "alice", "--env-var=TEST_PAT"])
         assert result.exit_code == 1
-        assert json.loads(result.output)["error"] == "env_var_not_a_token"
+        payload = json.loads(result.output)
+        assert payload["error"] == "env_var_not_a_token"
+        assert payload["value_preview"] == "not-…"
+        assert "not-a-token" not in result.output
 
     def test_preserves_existing_tokens(self, isolated, monkeypatch):
         _write_token(isolated, "bob", "tok_bob")
@@ -131,6 +155,16 @@ class TestAuthSaveEnvVar:
         content = (isolated / "ghool" / "secrets.toml").read_text()
         assert "tok_bob" in content
         assert "github_pat_alice" in content
+
+    def test_overwrites_existing_owner(self, isolated, monkeypatch):
+        _write_token(isolated, "alice", "github_pat_oldtoken")
+        self._invoke(isolated, monkeypatch, "github_pat_newtoken")
+        secrets_file = isolated / "ghool" / "secrets.toml"
+        content = secrets_file.read_text()
+        assert "github_pat_newtoken" in content
+        assert "github_pat_oldtoken" not in content
+        # chmod 600 must be re-applied on the update path too.
+        assert oct(stat.S_IMODE(secrets_file.stat().st_mode)) == oct(0o600)
 
 
 class TestWithKey:
@@ -202,6 +236,25 @@ class TestWithKey:
 
 
 
+class TestOwnerValidation:
+    def test_setup_rejects_invalid_owner(self, isolated):
+        result = CliRunner().invoke(cli, ["auth", "setup", 'bad"owner'])
+        assert result.exit_code == 1
+        assert json.loads(result.output)["error"] == "invalid_owner"
+
+    def test_save_rejects_invalid_owner(self, isolated):
+        # Owner is validated before any clipboard/network/file I/O.
+        result = CliRunner().invoke(cli, ["auth", "save", 'bad"owner'])
+        assert result.exit_code == 1
+        assert json.loads(result.output)["error"] == "invalid_owner"
+        assert not (isolated / "ghool" / "secrets.toml").exists()
+
+    def test_with_key_rejects_invalid_owner(self, isolated):
+        result = CliRunner().invoke(cli, ["with-key", 'bad"owner', "gh", "pr", "list"])
+        assert result.exit_code == 1
+        assert json.loads(result.output)["error"] == "invalid_owner"
+
+
 class TestSkill:
     def test_has_yaml_frontmatter(self, isolated):
         result = CliRunner().invoke(cli, ["skill"])
@@ -215,7 +268,18 @@ class TestSkill:
         result = CliRunner().invoke(cli, ["skill"])
         assert "ghool with-key OWNER gh" in result.output
 
-    def test_contains_all_command_names(self, isolated):
-        result = CliRunner().invoke(cli, ["skill"])
-        for cmd in ["with-key", "auth setup", "auth save", "skill"]:
-            assert cmd in result.output
+    def test_documents_all_commands(self, isolated):
+        # Derive command names from the live Click tree so adding/renaming a
+        # command without documenting it in skill.md fails the test.
+        out = CliRunner().invoke(cli, ["skill"]).output
+
+        def leaves(group, prefix=""):
+            for name, cmd in group.commands.items():
+                path = f"{prefix} {name}".strip()
+                if getattr(cmd, "commands", None):
+                    yield from leaves(cmd, path)
+                else:
+                    yield path
+
+        for cmd in leaves(cli):
+            assert cmd in out, f"{cmd!r} not documented in skill.md"

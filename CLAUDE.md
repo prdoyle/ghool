@@ -26,9 +26,10 @@ New commands get a function in `cli.py` plus tests in `tests/test_cli.py`.
 ## Mandatory: update `skill.md` on any CLI change
 
 Any change that alters command surface, output JSON shape, or recovery flow
-MUST also update `ghool/skill.md`. The skill test verifies the file parses as
-YAML-frontmatter markdown; correctness of content is the engineer's
-responsibility.
+MUST also update `ghool/skill.md`. The skill test verifies the frontmatter
+fences are present and that every CLI command (derived from the live Click
+command tree) is documented in `skill.md`; correctness of the frontmatter and
+prose content is the engineer's responsibility.
 
 ## Testing
 
@@ -47,8 +48,10 @@ Resist adding runtime deps.
 ## Security
 
 - Secrets file written with `chmod 600` on every save.
-- Never log token values anywhere.
-- Never include token values in any error payload printed to stdout.
+- Never print a token's random body in full — anywhere (stdout, stderr, errors,
+  logs). A preview may show the fixed prefix (`github_pat_`/`ghp_`) plus at most
+  4 characters of the random body: enough to recognise the key, never enough to
+  use it. Use `core.safe_preview` for this.
 
 ## Examples and documentation
 

@@ -10,6 +10,14 @@ import click
 from ghool import core, paths, smoketest
 
 
+def _require_valid_owner(owner):
+    """Print invalid_owner JSON and exit 1 if owner is not a valid GitHub name."""
+    err = core.validate_owner(owner)
+    if err is not None:
+        click.echo(json.dumps(err.to_json()))
+        sys.exit(1)
+
+
 @click.group()
 def cli():
     """ghool — route fine-grained GitHub PATs to gh commands by repo owner.
@@ -42,6 +50,7 @@ def cmd_auth_setup(owner):
 
     After creating the token in the browser, run: ghool auth save OWNER
     """
+    _require_valid_owner(owner)
     payload = core.build_auth_setup_payload(owner)
     click.echo(json.dumps(payload, indent=2))
     webbrowser.open(payload["browser_url"])
@@ -76,6 +85,7 @@ def cmd_auth_save(owner, env_var):
     On network error (exit 1): JSON {error: "network_error", message}
     On input errors (exit 1): JSON {error, message}
     """
+    _require_valid_owner(owner)
     if env_var is not None:
         token = os.environ.get(env_var)
         if token is None:
@@ -86,7 +96,7 @@ def cmd_auth_save(owner, env_var):
             }))
             sys.exit(1)
         if not core.is_github_pat(token):
-            preview = (token[:40] + "...") if len(token) > 40 else token
+            preview = core.safe_preview(token)
             click.echo(json.dumps({
                 "error": "env_var_not_a_token",
                 "var_name": env_var,
@@ -94,7 +104,7 @@ def cmd_auth_save(owner, env_var):
                 "message": f"{env_var!r} does not contain a GitHub PAT (expected github_pat_... or ghp_...).",
             }))
             sys.exit(1)
-        click.echo(f"Read token from ${env_var}: {token[:20]}...", err=True)
+        click.echo(f"Read token from ${env_var}: {core.safe_preview(token)}", err=True)
     else:
         try:
             proc = subprocess.run(["pbpaste"], capture_output=True, text=True, check=True)
@@ -104,9 +114,15 @@ def cmd_auth_save(owner, env_var):
                 "message": "pbpaste not found — clipboard reading is macOS only. Use --env-var=VAR to read from an environment variable.",
             }))
             sys.exit(1)
+        except subprocess.CalledProcessError:
+            click.echo(json.dumps({
+                "error": "clipboard_read_failed",
+                "message": "Failed to read the clipboard via pbpaste. Use --env-var=VAR to read from an environment variable instead.",
+            }))
+            sys.exit(1)
         token = proc.stdout.strip()
         if not core.is_github_pat(token):
-            preview = (token[:40] + "...") if len(token) > 40 else token
+            preview = core.safe_preview(token)
             click.echo(json.dumps({
                 "error": "clipboard_not_a_token",
                 "clipboard_preview": preview,
@@ -114,7 +130,7 @@ def cmd_auth_save(owner, env_var):
                 "suggested_action": f"Ask the user to copy their GitHub PAT to the clipboard, then run: ghool auth save {owner}",
             }))
             sys.exit(1)
-        click.echo(f"Read token from clipboard: {token[:20]}...", err=True)
+        click.echo(f"Read token from clipboard: {core.safe_preview(token)}", err=True)
 
     try:
         status, repos = smoketest.list_repos(owner, token)
@@ -157,6 +173,7 @@ def cmd_with_key(owner, args):
       {error, message}
     On success: gh output flows through directly; exit code matches gh's.
     """
+    _require_valid_owner(owner)
     if not args or args[0] != "gh":
         click.echo(json.dumps({
             "error": "not_gh_command",

@@ -43,6 +43,9 @@ into Python requires an extra permission prompt every time; `jq` does not.
   Prints JSON success/warning/error.
 - `ghool skill` — prints this file.
 
+OWNER must be a valid GitHub owner name (letters, digits, and hyphens). Any
+command rejects an invalid name with `{"error": "invalid_owner", ...}` and exit 1.
+
 ## Smoke-test behaviour of `auth save`
 
 - Private repos visible → saves with `{verified: true}` (high confidence).
