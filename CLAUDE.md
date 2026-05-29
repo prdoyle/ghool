@@ -1,9 +1,10 @@
 # ghool
 
-ghool is a GitHub PAT key management tool for LLM agent use. It stores
-fine-grained GitHub PATs by owner name and prints them on demand for use with
-`GH_TOKEN`. It is a key-management layer, not a `gh` replacement — the PAT
-itself is the security boundary.
+ghool is a GitHub personal access token (PAT) key management tool for LLM
+agent use. It stores fine-grained PATs (exclusively; classic PATs are not
+supported) by owner name and prints them on demand for use with `GH_TOKEN`.
+It is a key-management layer, not a `gh` replacement — the PAT itself is the
+security boundary.
 
 Primary usage pattern:
 
@@ -22,6 +23,16 @@ Four source modules, each with a single responsibility:
 
 New decision logic goes in `core.py` with unit tests in `tests/test_core.py`.
 New commands get a function in `cli.py` plus tests in `tests/test_cli.py`.
+
+## HUMANS.md
+
+Keep `HUMANS.md` short and sweet.
+Instructions  should be presented by the tool when they're needed, and shouldn't be repeated in HUMANS.md.
+The goal of HUMANS.md is to introduce them quickly to the concepts that
+will make them feel comfortable running the tool,
+such as its purpose, it's security model, the idempotency
+of the install script, etc.
+Any instructions requiring a number of steps ought to be automated or left to an LLM rather than imposed on humans.
 
 ## Mandatory: update `skill.md` on any CLI change
 
@@ -44,6 +55,13 @@ prose content is the engineer's responsibility.
 
 Runtime: `click`, `requests`. Keep it at two. Dev: `pytest`, `responses`.
 Resist adding runtime deps.
+
+## Token permissions
+
+Permission lists are sometimes presented to the user.
+These lists should be alphabetized so they line up with the alphabetized lists
+that the GitHub UI presents.
+Do NOT add Administration to any list — it allows deleting repos.
 
 ## Security
 

@@ -25,9 +25,11 @@ also installs the Claude skill so LLM agents know how to use ghool.
 ghool auth setup OWNER
 ```
 
-**Step 2** — In the browser: set resource owner to OWNER, grant **Contents**
-and **Metadata** (both read-only), choose which repos to scope it to, then
-generate and copy the token.
+**Step 2** — In the browser: set resource owner to OWNER,
+grant the permissions recommended in the output from Step 1,
+choose which repos to scope it to, then generate and copy the token.
+Read-only access is usually sufficient.
+**Don't grant any permissions you're uncomfortable granting!**
 
 **Step 3** — Copy the token to your clipboard, then save it:
 

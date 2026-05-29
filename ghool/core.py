@@ -129,8 +129,9 @@ def classify_smoke_test(owner: str, status_code: int, repos: list) -> SmokeResul
     if status_code == 403:
         return Invalid(
             status_code,
-            "Token rejected (403 Forbidden). Grant these Read-only permissions: "
-            "Actions, Commit statuses, Contents, Issues, Metadata, Pull requests. "
+            "Token rejected (403 Forbidden). Grant these Read-only permissions "
+            "under Repository permissions: Actions, Commit statuses, Contents, Issues, "
+            "Metadata, Pull requests. Under Organization permissions, also grant: Projects. "
             "Do NOT add Administration — it allows deleting repos.",
         )
     if status_code == 404:
@@ -216,8 +217,9 @@ def build_auth_setup_payload(owner: str) -> dict:
         "browser_url": url,
         "instructions": (
             f"Set 'Resource owner' to '{owner}'. "
-            "Grant these Read-only permissions: Actions, Commit statuses, Contents, "
-            "Issues, Metadata (required), Pull requests. "
+            "Grant these Read-only permissions under Repository permissions: "
+            "Actions, Commit statuses, Contents, Issues, Metadata (required), Pull requests. "
+            "Under Organization permissions, also grant: Projects. "
             "Do NOT add Administration — it allows deleting repos. "
             "Scope to 'All repositories' or only the repos you need."
         ),
