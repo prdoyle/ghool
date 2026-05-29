@@ -118,6 +118,16 @@ class Invalid:
 SmokeResult = Union[ConfidentValid, WarningNoPrivateRepos, Invalid]
 
 
+_PERMISSIONS_INSTRUCTIONS = (
+    "Grant these Read-only permissions under Repository permissions: "
+    "Actions, Commit statuses, Contents, Issues, Metadata (required), Pull requests. "
+    "Under Organization permissions, also grant: Projects. "
+    "Do NOT add Administration — it allows deleting repos."
+)
+
+_PAT_LIST_URL = "https://github.com/settings/personal-access-tokens"
+
+
 def classify_smoke_test(owner: str, status_code: int, repos: list) -> SmokeResult:
     """Classify a GitHub repos-list response into a save decision.
 
@@ -129,10 +139,8 @@ def classify_smoke_test(owner: str, status_code: int, repos: list) -> SmokeResul
     if status_code == 403:
         return Invalid(
             status_code,
-            "Token rejected (403 Forbidden). Grant these Read-only permissions "
-            "under Repository permissions: Actions, Commit statuses, Contents, Issues, "
-            "Metadata, Pull requests. Under Organization permissions, also grant: Projects. "
-            "Do NOT add Administration — it allows deleting repos.",
+            f"Token rejected (403 Forbidden). {_PERMISSIONS_INSTRUCTIONS} "
+            f"To edit your existing token, visit {_PAT_LIST_URL}",
         )
     if status_code == 404:
         return Invalid(status_code, f"Owner '{owner}' not found (404). Check the owner name.")
@@ -217,10 +225,7 @@ def build_auth_setup_payload(owner: str) -> dict:
         "browser_url": url,
         "instructions": (
             f"Set 'Resource owner' to '{owner}'. "
-            "Grant these Read-only permissions under Repository permissions: "
-            "Actions, Commit statuses, Contents, Issues, Metadata (required), Pull requests. "
-            "Under Organization permissions, also grant: Projects. "
-            "Do NOT add Administration — it allows deleting repos. "
+            f"{_PERMISSIONS_INSTRUCTIONS} "
             "Scope to 'All repositories' or only the repos you need."
         ),
         "note": (
