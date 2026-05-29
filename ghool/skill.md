@@ -22,11 +22,14 @@ Examples:
 
 ## Processing JSON output
 
-Use `jq` to filter and extract fields from `gh` output — not Python. Piping
-into Python requires an extra permission prompt every time; `jq` does not.
+Use `gh`'s built-in `--jq` flag — it requires no external tool and no extra
+permission prompt.
 
-    ghool with-key alice gh pr list --repo alice/my-repo --json number,title | jq '.[] | .title'
-    ghool with-key alice gh api repos/alice/my-repo/events?per_page=100 | jq '.[0].type'
+    ghool with-key alice gh pr list --repo alice/my-repo --json number,title --jq '.[].title'
+    ghool with-key alice gh api repos/alice/my-repo/events?per_page=100 --jq '.[0].type'
+
+If you need multi-step processing, pipe into `jq` as a fallback. Never use
+Python — it requires an extra permission prompt every time.
 
 ## Commands
 
