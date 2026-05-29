@@ -33,6 +33,7 @@ into Python requires an extra permission prompt every time; `jq` does not.
 - `ghool with-key OWNER gh ARGS` — run a `gh` command with the stored PAT for
   OWNER injected as `GH_TOKEN`. Only `gh` is accepted; other programs are
   rejected. Exit code matches `gh`'s. Preferred for all agent use.
+- `ghool auth list-keys` — lists all owners with stored PATs as JSON `{"owners": [...]}`.
 - `ghool auth setup OWNER` — opens the browser to create a fine-grained PAT for
   OWNER; prints JSON with required permissions and the next command to run.
 - `ghool auth save OWNER` — reads the PAT from the clipboard (macOS only),

@@ -35,6 +35,16 @@ def cmd_auth():
     """Manage stored GitHub PATs."""
 
 
+@cmd_auth.command("list-keys")
+def cmd_auth_list_keys():
+    """List owners that have a stored GitHub PAT.
+
+    On success (exit 0): JSON {"owners": [...]} — alphabetically sorted.
+    """
+    secrets = paths.read_secrets()
+    click.echo(json.dumps({"owners": sorted(secrets.keys())}))
+
+
 @cmd_auth.command("setup")
 @click.argument("owner")
 def cmd_auth_setup(owner):

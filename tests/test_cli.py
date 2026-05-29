@@ -29,6 +29,23 @@ def _write_token(isolated, owner, token):
     secrets_file.chmod(0o600)
 
 
+class TestAuthListKeys:
+    def test_empty(self, isolated):
+        result = CliRunner().invoke(cli, ["auth", "list-keys"])
+        assert result.exit_code == 0
+        assert json.loads(result.output) == {"owners": []}
+
+    def test_lists_owners_sorted(self, isolated):
+        secrets_dir = isolated / "ghool"
+        secrets_dir.mkdir(parents=True, exist_ok=True)
+        (secrets_dir / "secrets.toml").write_text(
+            '[tokens]\nzara = "github_pat_zzz"\nalice = "github_pat_aaa"\n'
+        )
+        result = CliRunner().invoke(cli, ["auth", "list-keys"])
+        assert result.exit_code == 0
+        assert json.loads(result.output) == {"owners": ["alice", "zara"]}
+
+
 class TestAuthSetup:
     def test_prints_json_and_opens_browser(self, isolated, monkeypatch):
         opened = []
