@@ -11,7 +11,7 @@ and what remains.
 ## Install
 
 ```bash
-/path/to/ghool/install.sh
+/path/to/ghool/install.sh --go
 ```
 
 The script is safe to re-run — it skips steps that are already complete. It

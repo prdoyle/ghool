@@ -30,21 +30,63 @@ except Exception:
 EOF
 }
 
-if [ "${1:-}" = "--status" ]; then
+print_status() {
+    local all_ok=1
     check_venv       && echo "[✓] Virtual environment (.venv)" \
-                     || echo "[✗] Virtual environment (.venv)"
+                     || { echo "[✗] Virtual environment (.venv)";                                  all_ok=0; }
     check_installed  && echo "[✓] Package installed" \
-                     || echo "[✗] Package installed"
+                     || { echo "[✗] Package installed";                                            all_ok=0; }
     check_linked     && echo "[✓] Binary linked (~/.local/bin/ghool)" \
-                     || echo "[✗] Binary linked (~/.local/bin/ghool)"
+                     || { echo "[✗] Binary linked (~/.local/bin/ghool)";                           all_ok=0; }
     check_skill      && echo "[✓] Claude skill installed (~/.claude/skills/ghool/SKILL.md)" \
-                     || echo "[✗] Claude skill installed (~/.claude/skills/ghool/SKILL.md)"
+                     || { echo "[✗] Claude skill installed (~/.claude/skills/ghool/SKILL.md)";     all_ok=0; }
     check_path       && echo "[✓] On PATH (ghool command available)" \
-                     || echo "[✗] On PATH (ghool command available)"
+                     || { echo "[✗] On PATH (ghool command available)";                            all_ok=0; }
     check_permission && echo "[✓] Claude Code allowlist entry present (~/.claude/settings.json)" \
-                     || echo "[✗] Claude Code allowlist entry present (~/.claude/settings.json)"
-    exit 0
-fi
+                     || { echo "[✗] Claude Code allowlist entry present (~/.claude/settings.json)"; all_ok=0; }
+    if [ "$all_ok" -eq 1 ]; then
+        echo "Status: ready"
+    else
+        echo "Status: INCOMPLETE"
+    fi
+}
+
+print_help() {
+    echo "ghool installer"
+    echo ""
+    echo "Usage:"
+    echo "  ./install.sh           Show this help and the current status"
+    echo "  ./install.sh --go      Install or update ghool (safe to re-run;"
+    echo "                         already-completed steps are skipped)"
+    echo "  ./install.sh --status  Show what's installed and what remains"
+    echo "  ./install.sh --help    Show this help and the current status"
+    echo ""
+    echo "See HUMANS.md for setup and usage instructions."
+}
+
+case "${1:-}" in
+    --go)
+        : # fall through to the install steps below
+        ;;
+    --status)
+        print_status
+        exit 0
+        ;;
+    --help|-h|"")
+        print_help
+        echo ""
+        echo "Currently installed:"
+        print_status
+        exit 0
+        ;;
+    *)  # unrecognized argument: same as help, but signal misuse
+        print_help
+        echo ""
+        echo "Currently installed:"
+        print_status
+        exit 1
+        ;;
+esac
 
 if check_venv; then
     echo "[✓] Virtual environment already exists"
