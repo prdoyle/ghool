@@ -159,7 +159,8 @@ def cmd_auth_save(owner, env_var):
     click.echo(json.dumps(result.to_json()))
 
 
-@cli.command("with-key", context_settings=dict(allow_extra_args=True, ignore_unknown_options=True))
+@cli.command("with-key", context_settings=dict(allow_extra_args=True, ignore_unknown_options=True),
+             add_help_option=False)
 @click.argument("owner")
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
 def cmd_with_key(owner, args):
@@ -173,8 +174,11 @@ def cmd_with_key(owner, args):
 
     Only 'gh' is accepted as the command; other programs are rejected.
 
+    All arguments after 'gh' (including --help) are passed straight to gh.
+
     Examples:
         ghool with-key alice gh pr list --repo alice/my-repo
+        ghool with-key alice gh pr list --help
         ghool with-key acme-corp gh api repos/acme-corp/internal-tool/issues
 
     On missing token (exit 1): JSON to stdout.
@@ -183,15 +187,47 @@ def cmd_with_key(owner, args):
       {error, message}
     On success: gh output flows through directly; exit code matches gh's.
     """
+    if owner in ("-h", "--help"):
+        ctx = click.get_current_context()
+        click.echo(ctx.get_help())
+        ctx.exit()
+    if owner.startswith("-"):
+        click.echo(json.dumps({
+            "error": "invalid_owner",
+            "owner": owner,
+            "message": (
+                f"{owner!r} looks like a flag. "
+                "Flags for gh belong after 'gh': ghool with-key OWNER gh ARGS --flag. "
+                "GitHub owner names cannot start with a dash."
+            ),
+            "suggested_commands": [
+                "ghool with-key --help",
+                f"ghool with-key OWNER gh ARGS {owner}",
+            ],
+        }))
+        sys.exit(1)
     _require_valid_owner(owner)
     if not args or args[0] != "gh":
-        click.echo(json.dumps({
-            "error": "not_gh_command",
-            "message": (
-                "ghool with-key only runs gh. "
-                "Usage: ghool with-key OWNER gh ARGS"
-            ),
-        }))
+        if args and args[0] in ("-h", "--help"):
+            click.echo(json.dumps({
+                "error": "not_gh_command",
+                "message": (
+                    f"Did you mean: ghool with-key --help"
+                    f"  or  ghool with-key {owner} gh --help?"
+                ),
+                "suggested_commands": [
+                    "ghool with-key --help",
+                    f"ghool with-key {owner} gh --help",
+                ],
+            }))
+        else:
+            click.echo(json.dumps({
+                "error": "not_gh_command",
+                "message": (
+                    "ghool with-key only runs gh. "
+                    "Usage: ghool with-key OWNER gh ARGS"
+                ),
+            }))
         sys.exit(1)
 
     secrets = paths.read_secrets()

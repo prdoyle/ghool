@@ -221,6 +221,24 @@ class TestWithKey:
         assert result.exit_code == 1
         assert json.loads(result.output)["error"] == "not_gh_command"
 
+    def test_help_after_owner_gives_suggestions(self, isolated):
+        _write_token(isolated, "alice", "github_pat_abc")
+        result = CliRunner().invoke(cli, ["with-key", "alice", "--help"])
+        assert result.exit_code == 1
+        payload = json.loads(result.output)
+        assert payload["error"] == "not_gh_command"
+        assert "ghool with-key --help" in payload["suggested_commands"]
+        assert "ghool with-key alice gh --help" in payload["suggested_commands"]
+
+    def test_flag_in_owner_position_gives_guidance(self, isolated):
+        result = CliRunner().invoke(cli, ["with-key", "--verbose", "gh", "pr", "list"])
+        assert result.exit_code == 1
+        payload = json.loads(result.output)
+        assert payload["error"] == "invalid_owner"
+        assert payload["owner"] == "--verbose"
+        assert "ghool with-key --help" in payload["suggested_commands"]
+        assert "--verbose" in payload["suggested_commands"][1]
+
     def test_token_not_in_output(self, isolated, monkeypatch):
         _write_token(isolated, "alice", "github_pat_supersecret")
         monkeypatch.setattr(subprocess, "run",
@@ -250,6 +268,43 @@ class TestWithKey:
             lambda args, env=None: calls.append((args, env)) or SimpleNamespace(returncode=0))
         CliRunner().invoke(cli, ["with-key", "alice", "gh", "pr", "list"])
         assert calls[0][1].get("MY_VAR") == "my_value"
+
+    def test_forwards_help_flag_to_gh(self, isolated, monkeypatch):
+        _write_token(isolated, "alice", "github_pat_abc")
+        calls = []
+        monkeypatch.setattr(subprocess, "run",
+            lambda args, env=None: calls.append((args, env)) or SimpleNamespace(returncode=0))
+        result = CliRunner().invoke(cli, ["with-key", "alice", "gh", "pr", "list", "--help"])
+        assert result.exit_code == 0
+        assert calls[0][0] == ["gh", "pr", "list", "--help"]
+        assert "Run a gh command" not in result.output  # ghool's help was NOT shown
+
+    def test_forwards_bare_gh_help(self, isolated, monkeypatch):
+        _write_token(isolated, "alice", "github_pat_abc")
+        calls = []
+        monkeypatch.setattr(subprocess, "run",
+            lambda args, env=None: calls.append((args, env)) or SimpleNamespace(returncode=0))
+        result = CliRunner().invoke(cli, ["with-key", "alice", "gh", "--help"])
+        assert result.exit_code == 0
+        assert calls[0][0] == ["gh", "--help"]
+
+    def test_with_key_own_help(self, isolated, monkeypatch):
+        calls = []
+        monkeypatch.setattr(subprocess, "run",
+            lambda args, env=None: calls.append((args, env)) or SimpleNamespace(returncode=0))
+        result = CliRunner().invoke(cli, ["with-key", "--help"])
+        assert result.exit_code == 0
+        assert "Run a gh command" in result.output  # ghool's own help
+        assert not calls  # subprocess was NOT invoked
+
+    def test_with_key_own_help_short(self, isolated, monkeypatch):
+        calls = []
+        monkeypatch.setattr(subprocess, "run",
+            lambda args, env=None: calls.append((args, env)) or SimpleNamespace(returncode=0))
+        result = CliRunner().invoke(cli, ["with-key", "-h"])
+        assert result.exit_code == 0
+        assert "Run a gh command" in result.output
+        assert not calls
 
 
 
